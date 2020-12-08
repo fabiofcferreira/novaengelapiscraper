@@ -7,13 +7,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/fabiofcferreira/novaengelapiparser"
+	"github.com/fabiofcferreira/novaengelapiscraper"
 	"github.com/fatih/color"
 )
 
 // Login performs login request
-func Login(username string, password string) (*novaengelapiparser.LoginAuthorization, error) {
-	authorization := &novaengelapiparser.LoginAuthorization{}
+func Login(username string, password string) (*novaengelapiscraper.LoginAuthorization, error) {
+	authorization := &novaengelapiscraper.LoginAuthorization{}
 
 	requestBody, err := json.Marshal(map[string]string{
 		"user":     username,

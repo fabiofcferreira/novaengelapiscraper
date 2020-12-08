@@ -6,9 +6,10 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/fabiofcferreira/novaengelapiparser"
-	"github.com/fabiofcferreira/novaengelapiparser/http"
 	"github.com/fatih/color"
+
+	"github.com/fabiofcferreira/novaengelapiscraper"
+	"github.com/fabiofcferreira/novaengelapiscraper/http"
 )
 
 func main() {
@@ -56,7 +57,7 @@ func main() {
 
 	// Save products in JSON file
 	color.Cyan("Saving products to JSON file...")
-	err = novaengelapiparser.SaveProductsInJSONFile("products.json", products)
+	err = novaengelapiscraper.SaveProductsInJSONFile("products.json", products)
 	if err != nil {
 		color.HiRed("Couldn't save products in JSON file.")
 		os.Exit(1)

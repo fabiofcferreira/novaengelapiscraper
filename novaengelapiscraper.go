@@ -1,4 +1,4 @@
-package novaengelapiparser
+package novaengelapiscraper
 
 // LoginCredentials is used to login in Nova Engel API
 type LoginCredentials struct {

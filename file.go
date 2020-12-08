@@ -1,4 +1,4 @@
-package novaengelapiparser
+package novaengelapiscraper
 
 import (
 	"encoding/json"

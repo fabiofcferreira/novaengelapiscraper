@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fabiofcferreira/novaengelapiparser"
+	"github.com/fabiofcferreira/novaengelapiscraper"
 	"github.com/fatih/color"
 )
 
@@ -24,8 +24,8 @@ var imagesFetchedCounter int = 0
 var noImageProductUIDs = []int{}
 
 // GetAllProducts fetches all products
-func GetAllProducts(token string) (*[]novaengelapiparser.Product, error) {
-	products := &[]novaengelapiparser.Product{}
+func GetAllProducts(token string) (*[]novaengelapiscraper.Product, error) {
+	products := &[]novaengelapiscraper.Product{}
 	url := strings.ReplaceAll(links["products"], "$TOKEN$", token)
 
 	resp, err := http.Get(url)
@@ -53,7 +53,7 @@ func GetAllProducts(token string) (*[]novaengelapiparser.Product, error) {
 }
 
 // GetAllProductsImages fetches all product images and saves them locally
-func GetAllProductsImages(token string, products *[]novaengelapiparser.Product) error {
+func GetAllProductsImages(token string, products *[]novaengelapiscraper.Product) error {
 	productsNumber = len(*products)
 
 	start := time.Now().Unix()
@@ -113,7 +113,7 @@ func GetAllProductsImages(token string, products *[]novaengelapiparser.Product) 
 }
 
 // GetProductsImages fetches products images and saves them inside a specified folder
-func GetProductsImages(wg *sync.WaitGroup, token string, folderName string, products []novaengelapiparser.Product) {
+func GetProductsImages(wg *sync.WaitGroup, token string, folderName string, products []novaengelapiscraper.Product) {
 	defer wg.Done()
 
 	url := ""
