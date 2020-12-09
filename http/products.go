@@ -49,6 +49,18 @@ func GetAllProducts(token string) (*[]novaengelapiscraper.Product, error) {
 		return nil, err
 	}
 
+	for index, product := range *products {
+		product.Price1 = product.PriceQuantity[0].Price
+		product.Price3 = product.PriceQuantity[1].Price
+		product.Price12 = product.PriceQuantity[2].Price
+		product.Price48 = product.PriceQuantity[3].Price
+		product.Price120 = product.PriceQuantity[4].Price
+
+		product.PriceQuantity = []novaengelapiscraper.ProductPriceQuantity{}
+
+		(*products)[index] = product
+	}
+
 	return products, err
 }
 
@@ -152,20 +164,22 @@ func GetProductsImages(wg *sync.WaitGroup, token string, folderName string, prod
 		defer resp.Body.Close()
 
 		// Open a file write stream
-		file, err := os.Create(path.Join(folderName, strconv.Itoa(product.ID)+".jpg"))
-		if err != nil {
-			noImageProductUIDs = append(noImageProductUIDs, product.ID)
-			color.HiRed("Couldn't open file write stream.")
-			continue
-		}
-		defer file.Close()
+		for _, eanCode := range product.EANs {
+			file, err := os.Create(path.Join(folderName, eanCode+".jpg"))
+			if err != nil {
+				noImageProductUIDs = append(noImageProductUIDs, product.ID)
+				color.HiRed("Couldn't open file write stream.")
+				continue
+			}
+			defer file.Close()
 
-		// Write to file using io.Copy
-		_, err = io.Copy(file, resp.Body)
-		if err != nil {
-			noImageProductUIDs = append(noImageProductUIDs, product.ID)
-			color.HiRed("Couldn't save to image file.")
-			continue
+			// Write to file
+			_, err = io.Copy(file, resp.Body)
+			if err != nil {
+				noImageProductUIDs = append(noImageProductUIDs, product.ID)
+				color.HiRed("Couldn't save to image file.")
+				continue
+			}
 		}
 
 		imagesFetchedCounter++

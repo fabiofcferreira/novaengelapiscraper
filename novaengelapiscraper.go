@@ -35,7 +35,13 @@ type Product struct {
 	Content     string
 	ProductLine string
 
-	PriceQuantity []ProductPriceQuantity
+	PriceQuantity []ProductPriceQuantity `json:",omitempty"`
+
+	Price1   float32
+	Price3   float32
+	Price12  float32
+	Price48  float32
+	Price120 float32
 
 	ItemID string
 }
