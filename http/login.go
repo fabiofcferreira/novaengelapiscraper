@@ -23,7 +23,7 @@ func Login(username string, password string) (*novaengelapiscraper.LoginAuthoriz
 		log.Fatalln(err)
 	}
 
-	resp, err := http.Post(links["login"], "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post(Links["login"], "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		color.HiRed("Couldn't perform login request.")
 		return nil, err

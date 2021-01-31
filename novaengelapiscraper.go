@@ -1,5 +1,7 @@
 package novaengelapiscraper
 
+import "unicode"
+
 // LoginCredentials is used to login in Nova Engel API
 type LoginCredentials struct {
 	User     string
@@ -50,4 +52,9 @@ type Product struct {
 type ProductPriceQuantity struct {
 	Quantity int
 	Price    float32
+}
+
+// IsMn ...
+func IsMn(r rune) bool {
+	return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
 }
