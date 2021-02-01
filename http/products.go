@@ -24,10 +24,12 @@ var imagesFetchedCounter int = 0
 var noImageProductUIDs = []int{}
 
 // GetAllProducts fetches all products
-func GetAllProducts(token string) (*[]novaengelapiscraper.Product, error) {
+func GetAllProducts(auth *novaengelapiscraper.LoginAuthorization) (*[]novaengelapiscraper.Product, error) {
+	color.Cyan("Fetching all products...")
 	products := &[]novaengelapiscraper.Product{}
-	url := strings.ReplaceAll(Links["products"], "$TOKEN$", token)
 
+	// Perform request
+	url := strings.ReplaceAll(Links["products"], "$TOKEN$", auth.Token)
 	resp, err := http.Get(url)
 	if err != nil {
 		color.HiRed("Couldn't perform login request.")
@@ -35,7 +37,7 @@ func GetAllProducts(token string) (*[]novaengelapiscraper.Product, error) {
 	}
 	defer resp.Body.Close()
 
-	// Parse request
+	// Parse request response
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		color.HiRed("Couldn't parse response JSON.")
@@ -49,6 +51,10 @@ func GetAllProducts(token string) (*[]novaengelapiscraper.Product, error) {
 		return nil, err
 	}
 
+	fmt.Printf("Fetched %d products.\n", len(*products))
+	color.HiYellow("Processing products list.")
+
+	// Process response
 	for index, product := range *products {
 		product.Price1 = product.PriceQuantity[0].Price
 		product.Price3 = product.PriceQuantity[1].Price
@@ -61,13 +67,15 @@ func GetAllProducts(token string) (*[]novaengelapiscraper.Product, error) {
 		(*products)[index] = product
 	}
 
+	color.HiCyan("Processed products list.")
+
 	return products, err
 }
 
 // GetProductImageURL fetches the product temporary link
-func GetProductImageURL(token string, id int) (string, error) {
+func GetProductImageURL(auth *novaengelapiscraper.LoginAuthorization, id int) (string, error) {
 	var url string = ""
-	url = strings.ReplaceAll(Links["productImage"], "$TOKEN$", token)
+	url = strings.ReplaceAll(Links["productImage"], "$TOKEN$", auth.Token)
 	url = strings.ReplaceAll(url, "$ID$", strconv.Itoa(id))
 
 	resp, err := http.Get(url)
@@ -94,7 +102,7 @@ func GetProductImageURL(token string, id int) (string, error) {
 }
 
 // GetAllProductsImages fetches all product images and saves them locally
-func GetAllProductsImages(token string, products *[]novaengelapiscraper.Product) error {
+func GetAllProductsImages(auth *novaengelapiscraper.LoginAuthorization, products *[]novaengelapiscraper.Product) error {
 	productsNumber = len(*products)
 
 	start := time.Now().Unix()
@@ -125,7 +133,7 @@ func GetAllProductsImages(token string, products *[]novaengelapiscraper.Product)
 
 	for i := 0; i < productsNumber; i += partsSize {
 		wg.Add(1)
-		go GetProductsImagesAsync(&wg, token, imagesFolderName, (*products)[startIndex:endIndex])
+		go GetProductsImagesAsync(&wg, auth, imagesFolderName, (*products)[startIndex:endIndex])
 		startIndex += partsSize
 		endIndex += partsSize
 
@@ -154,12 +162,12 @@ func GetAllProductsImages(token string, products *[]novaengelapiscraper.Product)
 }
 
 // GetProductsImagesAsync fetches products images and saves them inside a specified folder
-func GetProductsImagesAsync(wg *sync.WaitGroup, token string, folderName string, products []novaengelapiscraper.Product) {
+func GetProductsImagesAsync(wg *sync.WaitGroup, auth *novaengelapiscraper.LoginAuthorization, folderName string, products []novaengelapiscraper.Product) {
 	defer wg.Done()
 
 	url := ""
 	for _, product := range products {
-		url = strings.ReplaceAll(Links["productImage"], "$TOKEN$", token)
+		url = strings.ReplaceAll(Links["productImage"], "$TOKEN$", auth.Token)
 		url = strings.ReplaceAll(url, "$ID$", strconv.Itoa(product.ID))
 
 		resp, err := http.Get(url)

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/fabiofcferreira/novaengelapiscraper"
 	"github.com/fatih/color"
@@ -43,6 +44,9 @@ func Login(username string, password string) (*novaengelapiscraper.LoginAuthoriz
 		color.HiRed("Couldn't parse response JSON.")
 		return nil, err
 	}
+
+	// Add login time
+	authorization.LastLoggedIn = time.Now()
 
 	return authorization, err
 }

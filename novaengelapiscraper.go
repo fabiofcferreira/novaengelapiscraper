@@ -1,16 +1,16 @@
 package novaengelapiscraper
 
-import "unicode"
-
-// LoginCredentials is used to login in Nova Engel API
-type LoginCredentials struct {
-	User     string
-	Password string
-}
+import (
+	"time"
+	"unicode"
+)
 
 // LoginAuthorization is used for auth tokens
 type LoginAuthorization struct {
-	Token string
+	User         string
+	Password     string
+	Token        string
+	LastLoggedIn time.Time
 }
 
 // Product is used to represent products
