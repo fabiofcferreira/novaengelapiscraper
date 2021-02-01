@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
+	"math/rand"
 	"os"
 	"runtime"
 	"strconv"
@@ -107,23 +108,7 @@ func generateShopifyCSV() error {
 	}
 	fmt.Printf("Fetched %s products.\n", color.HiGreenString("%d", len(*products)))
 
-	// Open products CSV file stream
-	file, err := os.Create("products.csv")
-	if err != nil {
-		color.HiRed("Couldn't create products.csv file.")
-		return err
-	}
-
-	// Create CSV writer
-	csvWriter := csv.NewWriter(file)
-	defer csvWriter.Flush()
-
-	// Add headers
-	headers := []string{"Handle", "Title", "Body (HTML)", "Vendor", "Type", "Tags", "Published", "Option1 Name", "Option1 Value", "Option2 Name", "Option2 Value", "Option3 Name", "Option3 Value", "Variant SKU", "Variant Grams", "Variant Inventory Tracker", "Variant Inventory Qty", "Variant Inventory Policy", "Variant Fulfillment Service", "Variant Price", "Variant Compare At Price", "Variant Requires Shipping", "Variant Taxable", "Variant Barcode", "Image Src", "Image Position", "Image Alt Text", "Gift Card", "SEO Title", "SEO Description", "Google Shopping / Google Product Category", "Google Shopping / Gender", "Google Shopping / Age Group", "Google Shopping / MPN", "Google Shopping / AdWords Grouping", "Google Shopping / AdWords Labels", "Google Shopping / Condition", "Google Shopping / Custom Product", "Google Shopping / Custom Label 0", "Google Shopping / Custom Label 1", "Google Shopping / Custom Label 2", "Google Shopping / Custom Label 3", "Google Shopping / Custom Label 4", "Variant Image", "Variant Weight Unit", "Variant Tax Code", "Cost per item", "Status"}
-	// err = csvWriter.Write(headers)
-	// if err != nil {
-	// 	color.HiRed("Couldn't write products CSV file headers.")
-	// }
+	os.Mkdir("downloaded", 0755)
 
 	var productsCounted int = 0
 	var productsNumber int = len(*products)
@@ -132,48 +117,9 @@ func generateShopifyCSV() error {
 	partsSize := productsNumber / 16
 	startIndex := 0
 	endIndex := partsSize
-	// for i := 0; i < productsNumber; i += partsSize {
-	// 	wg.Add(1)
-	// 	go writeShopifyProductsCSV(&wg, csvWriter, (*products)[startIndex:endIndex], &productsCounted, &productsNumber)
-	// 	startIndex += partsSize
-	// 	endIndex += partsSize
-
-	// 	if endIndex >= productsNumber {
-	// 		endIndex = productsNumber - 1
-	// 	}
-	// }
-
-	// wg.Wait()
-
-	fmt.Println(len(*products))
-
-	// Open volume pricing CSV file stream
-	file, err = os.Create("volume_pricing.csv")
-	if err != nil {
-		color.HiRed("Couldn't create volume_pricing.csv file.")
-		return err
-	}
-
-	// Create CSV writer
-	csvWriter = csv.NewWriter(file)
-	defer csvWriter.Flush()
-
-	// Add headers
-	headers = []string{"sku", "barcode", "wholesale_price_1", "from_quantity_1", "to_quantity_1", "wholesale_price_2", "from_quantity_2", "to_quantity_2", "wholesale_price_3", "from_quantity_3", "to_quantity_3", "wholesale_price_4", "from_quantity_4", "to_quantity_4", "wholesale_price_5", "from_quantity_5", "to_quantity_5", "increments"}
-	err = csvWriter.Write(headers)
-	if err != nil {
-		color.HiRed("Couldn't write volume pricing CSV file headers.")
-	}
-
-	productsCounted = 0
-	wg = sync.WaitGroup{}
-
-	partsSize = productsNumber / 16
-	startIndex = 0
-	endIndex = partsSize
 	for i := 0; i < productsNumber; i += partsSize {
 		wg.Add(1)
-		go writeShopifyVolumePricingCSV(&wg, csvWriter, (*products)[startIndex:endIndex], &productsCounted, &productsNumber)
+		go writeShopifyProductsCSV(&wg, (*products)[startIndex:endIndex], &productsCounted, &productsNumber)
 		startIndex += partsSize
 		endIndex += partsSize
 
@@ -184,10 +130,81 @@ func generateShopifyCSV() error {
 
 	wg.Wait()
 
+	// // Open volume pricing CSV file stream
+	// file, err = os.Create("volume_pricing.csv")
+	// if err != nil {
+	// 	color.HiRed("Couldn't create volume_pricing.csv file.")
+	// 	return err
+	// }
+
+	// // Create CSV writer
+	// csvWriter = csv.NewWriter(file)
+	// defer csvWriter.Flush()
+
+	// // Add headers
+	// headers = []string{"sku", "barcode", "wholesale_price_1", "from_quantity_1", "to_quantity_1", "wholesale_price_2", "from_quantity_2", "to_quantity_2", "wholesale_price_3", "from_quantity_3", "to_quantity_3", "wholesale_price_4", "from_quantity_4", "to_quantity_4", "wholesale_price_5", "from_quantity_5", "to_quantity_5", "increments"}
+	// err = csvWriter.Write(headers)
+	// if err != nil {
+	// 	color.HiRed("Couldn't write volume pricing CSV file headers.")
+	// }
+
+	// productsCounted = 0
+	// wg = sync.WaitGroup{}
+
+	// partsSize = productsNumber / 16
+	// startIndex = 0
+	// endIndex = partsSize
+	// for i := 0; i < productsNumber; i += partsSize {
+	// 	wg.Add(1)
+	// 	go writeShopifyVolumePricingCSV(&wg, csvWriter, (*products)[startIndex:endIndex], &productsCounted, &productsNumber)
+	// 	startIndex += partsSize
+	// 	endIndex += partsSize
+
+	// 	if endIndex >= productsNumber {
+	// 		endIndex = productsNumber - 1
+	// 	}
+	// }
+
+	// wg.Wait()
+
 	return nil
 }
 
-func writeShopifyProductsCSV(wg *sync.WaitGroup, csvWriter *csv.Writer, products []novaengelapiscraper.Product, productsCounter *int, productsNumber *int) error {
+func writeShopifyProductsCSV(wg *sync.WaitGroup, products []novaengelapiscraper.Product, productsCounter *int, productsNumber *int) (string, error) {
+	unixTimeStr := strconv.FormatInt(time.Now().Unix(), 10)
+
+	// Generate unique hash
+	var b strings.Builder
+	rand.Seed(time.Now().UnixNano())
+	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"abcdefghijklmnopqrstuvwxyz" +
+		"0123456789")
+
+	for i := 0; i < 8; i++ {
+		b.WriteRune(chars[rand.Intn(len(chars))])
+	}
+
+	// Create images folder
+	productFilename := "product-" + b.String() + "-" + unixTimeStr
+
+	// Open products CSV file stream
+	file, err := os.Create(productFilename + ".csv")
+	if err != nil {
+		color.HiRed("Couldn't create " + productFilename + ".csv file.")
+		return "", err
+	}
+
+	// Create CSV writer
+	csvWriter := csv.NewWriter(file)
+	defer csvWriter.Flush()
+
+	// Add headers
+	headers := []string{"Handle", "Title", "Body (HTML)", "Vendor", "Type", "Tags", "Published", "Option1 Name", "Option1 Value", "Option2 Name", "Option2 Value", "Option3 Name", "Option3 Value", "Variant SKU", "Variant Grams", "Variant Inventory Tracker", "Variant Inventory Qty", "Variant Inventory Policy", "Variant Fulfillment Service", "Variant Price", "Variant Compare At Price", "Variant Requires Shipping", "Variant Taxable", "Variant Barcode", "Image Src", "Image Position", "Image Alt Text", "Gift Card", "SEO Title", "SEO Description", "Google Shopping / Google Product Category", "Google Shopping / Gender", "Google Shopping / Age Group", "Google Shopping / MPN", "Google Shopping / AdWords Grouping", "Google Shopping / AdWords Labels", "Google Shopping / Condition", "Google Shopping / Custom Product", "Google Shopping / Custom Label 0", "Google Shopping / Custom Label 1", "Google Shopping / Custom Label 2", "Google Shopping / Custom Label 3", "Google Shopping / Custom Label 4", "Variant Image", "Variant Weight Unit", "Variant Tax Code", "Cost per item", "Status"}
+	err = csvWriter.Write(headers)
+	if err != nil {
+		color.HiRed("Couldn't write products CSV file headers.")
+	}
+
 	for _, product := range products {
 		// Login again if token expires
 		if time.Now().After(lastLoginTime.Add(15 * time.Minute)) {
@@ -250,7 +267,7 @@ func writeShopifyProductsCSV(wg *sync.WaitGroup, csvWriter *csv.Writer, products
 		line = append(line, "manual")
 
 		// Add price
-		line = append(line, fmt.Sprintf("%.2f", (product.PVR/0.9)*1.23))
+		line = append(line, fmt.Sprintf("%.2f", (product.Price/0.9)*1.23))
 		line = append(line, "")
 
 		// Add shipping necessity
@@ -313,7 +330,7 @@ func writeShopifyProductsCSV(wg *sync.WaitGroup, csvWriter *csv.Writer, products
 		(*productsCounter)++
 
 		// Log
-		fmt.Printf("[%.2f%%] Fetched image %d of %d products.\n", (float32(*productsCounter)/float32(*productsNumber))*100, *productsCounter, *productsNumber)
+		// fmt.Printf("[%.2f%%] Fetched image %d of %d products.\n", (float32(*productsCounter)/float32(*productsNumber))*100, *productsCounter, *productsNumber)
 
 		err = csvWriter.Write(line)
 		if err != nil {
@@ -326,7 +343,27 @@ func writeShopifyProductsCSV(wg *sync.WaitGroup, csvWriter *csv.Writer, products
 
 	wg.Done()
 
-	return nil
+	// Close file streams
+	csvWriter.Flush()
+	err = file.Close()
+	if err != nil {
+		color.Red("Couldn't close file stream")
+		os.Exit(1)
+	}
+
+	// fmt.Println(err)
+
+	color.Green("Finished writing " + productFilename + ".csv")
+
+	// oldLocation := "./" + productFilename + ".csv"
+	// newLocation := "./downloaded/" + productFilename + ".csv"
+	// err = os.Rename(oldLocation, newLocation)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// 	os.Exit(1)
+	// }
+
+	return productFilename, nil
 }
 
 func writeShopifyVolumePricingCSV(wg *sync.WaitGroup, csvWriter *csv.Writer, products []novaengelapiscraper.Product, productsCounter *int, productsNumber *int) error {
