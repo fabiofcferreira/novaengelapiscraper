@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -251,6 +252,10 @@ func GenerageShopifyCSVWithImages(auth *novaengelapiscraper.LoginAuthorization, 
 		line = append(line, product.EANs[0])
 
 		// Add image source
+		if _, err := os.Stat("./" + imageFolderName + "/" + product.EANs[0] + ".jpg"); os.IsNotExist(err) {
+			continue
+		}
+
 		line = append(line, schema+"://"+assetHost+"/"+imageFolderName+"/"+product.EANs[0]+".jpg")
 		line = append(line, "1")
 		line = append(line, "")
