@@ -102,9 +102,14 @@ func GetProductImageURL(auth *novaengelapiscraper.LoginAuthorization, id int) (s
 }
 
 // GetAllProductsImages fetches all product images and saves them locally
-func GetAllProductsImages(auth *novaengelapiscraper.LoginAuthorization, products *[]novaengelapiscraper.Product) error {
-	productsNumber = len(*products)
+func GetAllProductsImages(auth *novaengelapiscraper.LoginAuthorization) error {
+	products, err := GetAllProducts(auth)
+	if err != nil {
+		color.HiRed("Couldn't fetch all products")
+		return err
+	}
 
+	productsNumber = len(*products)
 	start := time.Now().Unix()
 
 	// Generate unique hash
@@ -159,6 +164,72 @@ func GetAllProductsImages(auth *novaengelapiscraper.LoginAuthorization, products
 	}
 
 	return nil
+}
+
+// GetAllProductsImagesUsingList fetches all product images and saves them
+// locally (using a provided list of products)
+func GetAllProductsImagesUsingList(auth *novaengelapiscraper.LoginAuthorization, products *[]novaengelapiscraper.Product) (string, error) {
+	productsNumber = len(*products)
+	start := time.Now().Unix()
+
+	// Generate unique hash
+	var b strings.Builder
+	rand.Seed(time.Now().UnixNano())
+	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"abcdefghijklmnopqrstuvwxyz" +
+		"0123456789")
+
+	for i := 0; i < 8; i++ {
+		b.WriteRune(chars[rand.Intn(len(chars))])
+	}
+
+	// Create images folder
+	imagesFolderName := "images-" + b.String()
+	os.Mkdir(imagesFolderName, 0755)
+
+	fmt.Printf("Hopefully there are %d images.\n", productsNumber)
+
+	// Start fetching all images
+	var wg sync.WaitGroup
+
+	partsSize := productsNumber / 16
+	startIndex := 0
+	endIndex := partsSize
+
+	for i := 0; i < productsNumber; i += partsSize {
+		wg.Add(1)
+		go GetProductsImagesAsync(&wg, auth, imagesFolderName, (*products)[startIndex:endIndex])
+		startIndex += partsSize
+		endIndex += partsSize
+
+		if endIndex >= productsNumber {
+			endIndex = productsNumber - 1
+		}
+	}
+
+	wg.Wait()
+
+	end := time.Now().Unix()
+	duration := end - start
+
+	fmt.Printf("%d seconds have passed. %s images were fetched of %s products.", uint(duration), color.HiGreenString("%d", imagesFetchedCounter), color.HiGreenString("%d", productsNumber))
+
+	// Couldn't marshal list of products without images
+	file, err := json.MarshalIndent(noImageProductUIDs, "", "  ")
+	if err != nil {
+		color.HiRed("Couldn't save list of products with no image.")
+
+		return "", err
+	}
+
+	// Save JSOn with all list of products without images
+	if err = ioutil.WriteFile("productsWithoutImage.json", file, 0644); err != nil {
+		color.HiRed("Couldn't write JSON to destination file.")
+
+		return "", err
+	}
+
+	return imagesFolderName, nil
 }
 
 // GetProductsImagesAsync fetches products images and saves them inside a specified folder
